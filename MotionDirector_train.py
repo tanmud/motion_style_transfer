@@ -948,6 +948,26 @@ def main(
             # total spatial loss
             loss_spatial = loss_content + loss_style
 
+        if mask_temporal_lora:
+            loras = extract_lora_child_module(unet, target_replace_module=["TransformerTemporalModel"])
+            for lora_i in loras:
+                lora_i.scale = 0.
+            loss_temporal = None
+        else:
+            loras = extract_lora_child_module(unet, target_replace_module=["TransformerTemporalModel"])
+            for lora_i in loras:
+                lora_i.scale = 1.
+            model_pred = unet(noisy_latents, timesteps, encoder_hidden_states=encoder_hidden_states).sample
+            loss_temporal = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+
+            beta = 1
+            alpha = (beta ** 2 + 1) ** 0.5
+            ran_idx = torch.randint(0, model_pred.shape[2], (1,)).item()
+            model_pred_decent = alpha * model_pred - beta * model_pred[:, :, ran_idx, :, :].unsqueeze(2)
+            target_decent = alpha * target - beta * target[:, :, ran_idx, :, :].unsqueeze(2)
+            loss_ad_temporal = F.mse_loss(model_pred_decent.float(), target_decent.float(), reduction="mean")
+            loss_temporal = loss_temporal + loss_ad_temporal
+
         return loss_spatial, loss_temporal, latents, noise
 
     for epoch in range(first_epoch, num_train_epochs):
