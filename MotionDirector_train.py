@@ -673,6 +673,63 @@ def main(
 
         unet_negation_all = unet_negation_spatial + unet_negation_temporal
 
+    # ------- Content Lora ------- 
+    lora_manager_content = LoraHandler(
+        use_unet_lora=use_unet_lora,
+        unet_replace_modules=["Transformer2DModel"]                                
+    )
+    unet_lora_params_content, unet_negation_content = lora_manager_content.add_lora_to_model(
+        use_unet_lora, unet, lora_manager_content.unet_replace_modules,
+        lora_unet_dropout, lora_path + '/content/lora/', r=lora_rank
+    )
+    optimizer_content = optimizer_cls(create_optimizer_params(
+        [param_optim(unet_lora_params_content, use_unet_lora, is_lora=True,
+                     extra_params={**{"lr": learning_rate}, **extra_text_encoder_params})],
+                     learning_rate),
+        lr=learning_rate,
+        betas=(adam_beta1, adam_beta2),
+        weight_decay=adam_weight_decay,
+        eps=adam_epsilon,
+    )
+    lr_scheduler_content = get_scheduler(
+        lr_scheduler,
+        optimizer=optimizer_content,
+        num_warmup_steps=lr_warmup_steps * gradient_accumulation_steps,
+        num_training_steps=max_train_steps * gradient_accumulation_steps,
+    )   
+
+
+#     # ------ Style Lora ------
+#     lora_manager_style = LoraHandler(
+#         use_unet_lora=use_unet_lora,
+#         unet_replace_modules=["Transformer2DModel"]
+#     )
+#     unet_lora_params_style, unet_negation_style = lora_manager_style.add_lora_to_model(
+#     use_unet_lora, unet, lora_manager_style.unet_replace_modules,
+#     lora_unet_dropout, lora_path + '/style/lora/', r=lora_rank
+# )
+#     optimizer_style = optimizer_cls(
+#         create_optimizer_params(
+#             [param_optim(unet_lora_params_style, use_unet_lora, is_lora=True,
+#                         extra_params={**{"lr": learning_rate}, **extra_unet_params})],
+#             learning_rate
+#         ),
+#         lr=learning_rate,
+#         betas=(adam_beta1, adam_beta2),
+#         weight_decay=adam_weight_decay,
+#         eps=adam_epsilon,
+#     )
+#     lr_scheduler_style = get_scheduler(
+#         lr_scheduler,
+#         optimizer=optimizer_style,
+#         num_warmup_steps=lr_warmup_steps * gradient_accumulation_steps,
+#         num_training_steps=max_train_steps * gradient_accumulation_steps,
+#     )
+    
+    # Tanish: Update negation list
+    unet_negation_all = unet_negation_spatial + unet_negation_temporal + unet_negation_content
+                                    
+
     # DataLoaders creation:
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
@@ -697,13 +754,27 @@ def main(
         train_dataloader = cached_data_loader
 
     # Prepare everything with our `accelerator`.
-    unet, optimizer_spatial_list, optimizer_temporal, train_dataloader, lr_scheduler_spatial_list, lr_scheduler_temporal, text_encoder = accelerator.prepare(
+    # # ORIGINAL:
+    # unet, optimizer_spatial_list, optimizer_temporal, train_dataloader, lr_scheduler_spatial_list, lr_scheduler_temporal, text_encoder = accelerator.prepare(
+    #     unet,
+    #     optimizer_spatial_list, optimizer_temporal,
+    #     train_dataloader,
+    #     lr_scheduler_spatial_list, lr_scheduler_temporal,
+    #     text_encoder
+    # )
+
+    # Tanish: Added content and style optimizers and schedulers to accelerator.prepare
+    unet, optimizer_spatial_list, optimizer_temporal, optimizer_content, optimizer_style, \
+    train_dataloader, lr_scheduler_spatial_list, lr_scheduler_temporal, \
+    lr_scheduler_content, lr_scheduler_style, text_encoder = accelerator.prepare(
         unet,
-        optimizer_spatial_list, optimizer_temporal,
+        optimizer_spatial_list, optimizer_temporal, optimizer_content, optimizer_style,
         train_dataloader,
         lr_scheduler_spatial_list, lr_scheduler_temporal,
+        lr_scheduler_content, lr_scheduler_style,
         text_encoder
     )
+
 
     # Use Gradient Checkpointing if enabled.
     unet_and_text_g_c(
@@ -818,64 +889,65 @@ def main(
             for lora_i in loras:
                 lora_i.scale = 0.
             loss_spatial = None
+            loss_content = None
+            loss_style = None
         else:
+            # --- enable spatial LoRAs, disable temporal LoRAs for spatial passes ---
             loras = extract_lora_child_module(unet, target_replace_module=["Transformer2DModel"])
-
             if spatial_lora_num == 1:
                 for lora_i in loras:
                     lora_i.scale = 1.
             else:
                 for lora_i in loras:
                     lora_i.scale = 0.
-
                 for lora_idx in range(0, len(loras), spatial_lora_num):
                     loras[lora_idx + step].scale = 1.
 
-            loras = extract_lora_child_module(unet, target_replace_module=["TransformerTemporalModel"])
-            if len(loras) > 0:
-                for lora_i in loras:
+            loras_temp = extract_lora_child_module(unet, target_replace_module=["TransformerTemporalModel"])
+            if len(loras_temp) > 0:
+                for lora_i in loras_temp:
                     lora_i.scale = 0.
 
+            # ---------- CONTENT LOSS: one random frame from video ----------
             ran_idx = torch.randint(0, noisy_latents.shape[2], (1,)).item()
 
             if random.uniform(0, 1) < random_hflip_img:
                 pixel_values_spatial = transforms.functional.hflip(
-                    batch["pixel_values"][:, ran_idx, :, :, :]).unsqueeze(1)
-                latents_spatial = tensor_to_vae_latent(pixel_values_spatial, vae)
-                noise_spatial = sample_noise(latents_spatial, offset_noise_strength, use_offset_noise)
-                noisy_latents_input = noise_scheduler.add_noise(latents_spatial, noise_spatial, timesteps)
-                target_spatial = noise_spatial
-                model_pred_spatial = unet(noisy_latents_input, timesteps,
-                                          encoder_hidden_states=encoder_hidden_states).sample
-                loss_spatial = F.mse_loss(model_pred_spatial[:, :, 0, :, :].float(),
-                                          target_spatial[:, :, 0, :, :].float(), reduction="mean")
+                    batch["pixel_values"][:, ran_idx, :, :, :]
+                ).unsqueeze(1)  # [B,1,C,H,W]
+                latents_content = tensor_to_vae_latent(pixel_values_spatial, vae)
+                noise_content = sample_noise(latents_content, offset_noise_strength, use_offset_noise)
+                noisy_latents_content = noise_scheduler.add_noise(latents_content, noise_content, timesteps)
+                target_content = noise_content
+
+                model_pred_content = unet(
+                    noisy_latents_content, timesteps,
+                    encoder_hidden_states=encoder_hidden_states
+                ).sample
+                loss_content = F.mse_loss(
+                    model_pred_content[:, :, 0, :, :].float(),
+                    target_content[:, :, 0, :, :].float(),
+                    reduction="mean",
+                )
             else:
-                noisy_latents_input = noisy_latents[:, :, ran_idx, :, :]
-                target_spatial = target[:, :, ran_idx, :, :]
-                model_pred_spatial = unet(noisy_latents_input.unsqueeze(2), timesteps,
-                                          encoder_hidden_states=encoder_hidden_states).sample
-                loss_spatial = F.mse_loss(model_pred_spatial[:, :, 0, :, :].float(),
-                                          target_spatial.float(), reduction="mean")
+                noisy_latents_content = noisy_latents[:, :, ran_idx, :, :]
+                target_content = target[:, :, ran_idx, :, :]
+                model_pred_content = unet(
+                    noisy_latents_content.unsqueeze(2), timesteps,
+                    encoder_hidden_states=encoder_hidden_states
+                ).sample
+                loss_content = F.mse_loss(
+                    model_pred_content[:, :, 0, :, :].float(),
+                    target_content.float(),
+                    reduction="mean",
+                )
 
-        if mask_temporal_lora:
-            loras = extract_lora_child_module(unet, target_replace_module=["TransformerTemporalModel"])
-            for lora_i in loras:
-                lora_i.scale = 0.
-            loss_temporal = None
-        else:
-            loras = extract_lora_child_module(unet, target_replace_module=["TransformerTemporalModel"])
-            for lora_i in loras:
-                lora_i.scale = 1.
-            model_pred = unet(noisy_latents, timesteps, encoder_hidden_states=encoder_hidden_states).sample
-            loss_temporal = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+            # ---------- STYLE LOSS: Phase 2, reuse same frame (stub) ----------
+            # Later will change this to a separate style image.
+            loss_style = loss_content.clone()
 
-            beta = 1
-            alpha = (beta ** 2 + 1) ** 0.5
-            ran_idx = torch.randint(0, model_pred.shape[2], (1,)).item()
-            model_pred_decent = alpha * model_pred - beta * model_pred[:, :, ran_idx, :, :].unsqueeze(2)
-            target_decent = alpha * target - beta * target[:, :, ran_idx, :, :].unsqueeze(2)
-            loss_ad_temporal = F.mse_loss(model_pred_decent.float(), target_decent.float(), reduction="mean")
-            loss_temporal = loss_temporal + loss_ad_temporal
+            # total spatial loss
+            loss_spatial = loss_content + loss_style
 
         return loss_spatial, loss_temporal, latents, noise
 
@@ -925,6 +997,10 @@ def main(
                         optimizer_spatial_list[0].step()
                     else:
                         optimizer_spatial_list[step].step()
+
+                    # Tanish: Content Lora optimization step 
+                    optimizer_content.step()
+                    lr_scheduler_content.step()
 
                 if not mask_temporal_lora and train_temporal_lora:
                     accelerator.backward(loss_temporal)

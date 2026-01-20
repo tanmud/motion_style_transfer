@@ -1,11 +1,11 @@
 # Pretrained diffusers model path.
-pretrained_model_path: "/Users/rui/data/models/zeroscope_v2_576w/"
+pretrained_model_path: "/work/10572/tmudali/vista/motion_style_transfer/models/zeroscope_v2_576w/"
 
 # The folder where your training outputs will be placed.
 output_dir: "./outputs/train"
 
 dataset_types:
-  - 'folder'
+  - "folder"
 
 # Caches the latents (Frames-Image -> VAE -> Latent) to a HDD or SDD.
 # The latents will be saved under your training folder, and loaded automatically for training.
@@ -33,7 +33,6 @@ lora_rank: 32
 
 # Training data parameters
 train_data:
-
   # The width and height in which you want your training data to be resized to.
   width: 384
   height: 384
@@ -62,11 +61,10 @@ train_data:
 
 # Validation data parameters.
 validation_data:
-
   # A custom prompt that is different from your training dataset.
   prompt:
-  - "A person is riding a bicycle past the Eiffel Tower."
-  - "A panda is riding a bicycle in a garden."
+    - "A person is riding a bicycle past the Eiffel Tower."
+    - "A panda is riding a bicycle in a garden."
 
   # Whether or not to sample preview during training (Requires more VRAM).
   sample_preview: True

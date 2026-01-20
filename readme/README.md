@@ -27,7 +27,6 @@
     <b>Show Lab, National University of Singapore</b>
   </p>
 
-
 <p align="center">
 <img src="https://github.com/showlab/MotionDirector/blob/page/assets/teaser.gif" width="1080px"/>  
 <br>
@@ -35,16 +34,19 @@
 </p>
 
 ## Task Definition
+
 Motion Customization of Text-to-Video Diffusion Models: </br>
 Given a set of video clips of the same motion concept, the task of **Motion Customization** is to adapt existing text-to-video diffusion
 models to generate diverse videos with this motion.
 
-
 ## Demos
+
 ### Demo Video:
+
 [![Demo Video of MotionDirector](https://res.cloudinary.com/marcomontalbano/image/upload/v1702612078/video_to_markdown/images/youtube--Wq93zi8bE3U-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=Wq93zi8bE3U "Demo Video of MotionDirector")
 
 ### Customize both Appearance and Motion: <a name="Customize_both_Appearance_and_Motion"></a>
+
 <table class="center"> 
 <tr>
   <td style="text-align:center;"><b>Reference images or videos</b></td>
@@ -77,10 +79,11 @@ models to generate diverse videos with this motion.
 </table>
 
 ## News
+
 - [2024.02.03] [MotionDirector for AnimateDiff](https://github.com/ExponentialML/AnimateDiff-MotionDirector) is available. Thanks to [ExponentialML](https://github.com/ExponentialML).
 - [2023.12.27] [MotionDirector with Customized Appearance](#motiondirector-with-customized-appearance-) released. Now, you can customize both appearance and motion in video generation.
 - [2023.12.27] [MotionDirector for Image Animation](#motiondirector-for-image-animation-) released.
-- [2023.12.23] MotionDirector has been featured in Hugging Face's '[Spaces of the Week](https://huggingface.co/spaces) 🔥' trending list! 
+- [2023.12.23] MotionDirector has been featured in Hugging Face's '[Spaces of the Week](https://huggingface.co/spaces) 🔥' trending list!
 - [2023.12.13] Online gradio demo released @ [Hugging Face Spaces](https://huggingface.co/spaces/ruizhaocv/MotionDirector)! Welcome to try it.
 - [2023.12.06] [MotionDirector for Sports](#motiondirector-for-sports-) released! Lifting weights, riding horse, palying golf, etc.
 - [2023.12.05] [Colab demo](https://github.com/camenduru/MotionDirector-colab) is available. Thanks to [Camenduru](https://twitter.com/camenduru).
@@ -89,22 +92,21 @@ models to generate diverse videos with this motion.
 - [2023.10.12] Paper and project page released.
 
 ## ToDo
+
 - [x] Gradio Demo
 - [ ] More trained weights of MotionDirector
 
 ## Model List
 
-| Type |                                                       Training Data                                                       |                                      Descriptions                                       | Link  |
-| :---: |:-------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------:|:---:|
-| MotionDirector for Sports   |                                              Multiple videos for each model.                                              | Learn motion concepts of sports, i.e. lifting weights, riding horse, palying golf, etc. | [Link](#motiondirector-for-sports-)  |
-| MotionDirector for Cinematic Shots   |                                              A single video for each model.                                               |   Learn motion concepts of cinematic shots, i.e. dolly zoom, zoom in, zoom out, etc.    | [Link](#motiondirector-for-cinematic-shots-)  |
-| MotionDirector for Image Animation   |                 A single image for spatial path. And a single video or multiple videos for temporal path.                 |                      Animate the given image with learned motions.                      | [Link](#motiondirector-for-image-animation-)  |
-| MotionDirector with Customized Appearance  | A single image or multiple images for spatial path. And a single video or multiple videos for temporal path. |                Customize both appearance and motion in video generation.                | [Link](#motiondirector-with-customized-appearance-)  |
-
-
-
+|                   Type                    |                                                Training Data                                                 |                                      Descriptions                                       |                        Link                         |
+| :---------------------------------------: | :----------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: | :-------------------------------------------------: |
+|         MotionDirector for Sports         |                                       Multiple videos for each model.                                        | Learn motion concepts of sports, i.e. lifting weights, riding horse, palying golf, etc. |         [Link](#motiondirector-for-sports-)         |
+|    MotionDirector for Cinematic Shots     |                                        A single video for each model.                                        |   Learn motion concepts of cinematic shots, i.e. dolly zoom, zoom in, zoom out, etc.    |    [Link](#motiondirector-for-cinematic-shots-)     |
+|    MotionDirector for Image Animation     |          A single image for spatial path. And a single video or multiple videos for temporal path.           |                      Animate the given image with learned motions.                      |    [Link](#motiondirector-for-image-animation-)     |
+| MotionDirector with Customized Appearance | A single image or multiple images for spatial path. And a single video or multiple videos for temporal path. |                Customize both appearance and motion in video generation.                | [Link](#motiondirector-with-customized-appearance-) |
 
 ## Setup
+
 ### Requirements
 
 ```shell
@@ -116,6 +118,7 @@ pip install -r requirements.txt
 ```
 
 ### Weights of Foundation Models
+
 ```shell
 git lfs install
 ## You can choose the ModelScopeT2V or ZeroScope, etc., as the foundation model.
@@ -124,7 +127,9 @@ git clone https://huggingface.co/cerspense/zeroscope_v2_576w ./models/zeroscope_
 ## ModelScopeT2V
 git clone https://huggingface.co/damo-vilab/text-to-video-ms-1.7b ./models/model_scope/
 ```
+
 ### Weights of trained MotionDirector <a name="download_weights"></a>
+
 ```shell
 # Make sure you have git-lfs installed (https://git-lfs.com)
 git lfs install
@@ -136,47 +141,57 @@ git clone https://huggingface.co/ruizhaocv/MotionDirector ./outputs
 ```
 
 ## Usage
+
 ### Training
 
 #### Train MotionDirector on multiple videos:
+
 ```bash
 python MotionDirector_train.py --config ./configs/config_multi_videos.yaml
 ```
+
 #### Train MotionDirector on a single video:
+
 ```bash
 python MotionDirector_train.py --config ./configs/config_single_video.yaml
 ```
 
-Note:  
-- Before running the above command, 
-make sure you replace the path to foundational model weights and training data with your own in the config files `config_multi_videos.yaml` or `config_single_video.yaml`.
+Note:
+
+- Before running the above command,
+  make sure you replace the path to foundational model weights and training data with your own in the config files `config_multi_videos.yaml` or `config_single_video.yaml`.
 - Generally, training on multiple 16-frame videos usually takes `300~500` steps, about `9~16` minutes using one A5000 GPU. Training on a single video takes `50~150` steps, about `1.5~4.5` minutes using one A5000 GPU. The required VRAM for training is around `14GB`.
 - Reduce `n_sample_frames` if your GPU memory is limited.
 - Reduce the learning rate and increase the training steps for better performance.
 
-
 ### Inference
+
 ```bash
-python MotionDirector_inference.py --model /path/to/the/foundation/model  --prompt "Your prompt" --checkpoint_folder /path/to/the/trained/MotionDirector --checkpoint_index 300 --noise_prior 0.
+python MotionDirector_inference.py --model ./models/zeroscope_v2_576w/  --prompt "Your prompt" --checkpoint_folder ./outputs/train/{folder} --checkpoint_index 150 --noise_prior 0.
 ```
-Note: 
+
+Note:
+
 - Replace `/path/to/the/foundation/model` with your own path to the foundation model, like ZeroScope.
 - The value of `checkpoint_index` means the checkpoint saved at which the training step is selected.
-- The value of `noise_prior` indicates how much the inversion noise of the reference video affects the generation. 
-We recommend setting it to `0` for MotionDirector trained on multiple videos to achieve the highest diverse generation, while setting it to `0.1~0.5` for MotionDirector trained on a single video for faster convergence and better alignment with the reference video.
-
+- The value of `noise_prior` indicates how much the inversion noise of the reference video affects the generation.
+  We recommend setting it to `0` for MotionDirector trained on multiple videos to achieve the highest diverse generation, while setting it to `0.1~0.5` for MotionDirector trained on a single video for faster convergence and better alignment with the reference video.
 
 ## Inference with pre-trained MotionDirector
+
 All available weights are at official [Huggingface Repo](https://huggingface.co/ruizhaocv/MotionDirector_weights).
 Run the [download command](#download_weights), the weights will be downloaded to the folder `outputs`, then run the following inference command to generate videos.
 
 ### MotionDirector trained on multiple videos:
+
 ```bash
 python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A person is riding a bicycle past the Eiffel Tower." --checkpoint_folder ./outputs/train/riding_bicycle/ --checkpoint_index 300 --noise_prior 0. --seed 7192280
 ```
-Note:  
+
+Note:
+
 - Replace `/path/to/the/ZeroScope` with your own path to the foundation model, i.e. the ZeroScope.
-- Change the `prompt` to generate different videos. 
+- Change the `prompt` to generate different videos.
 - The `seed` is set to a random value by default. Set it to a specific value will obtain certain results, as provided in the table below.
 
 Results:
@@ -200,10 +215,13 @@ Results:
 </table>
 
 ### MotionDirector trained on a single video:
+
 16 frames:
+
 ```bash
-python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A tank is running on the moon." --checkpoint_folder ./outputs/train/car_16/ --checkpoint_index 150 --noise_prior 0.5 --seed 8551187
+python MotionDirector_inference.py --model ./models/zeroscope_v2_576w/  --prompt "A tank is running on the moon." --checkpoint_folder ./outputs/train/train_2026-01-19T14-29-26 --checkpoint_index 150 --noise_prior 0.5 --seed 8551187
 ```
+
 <table class="center">
 <tr>
   <td style="text-align:center;"><b>Reference Video</b></td>
@@ -224,9 +242,11 @@ python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A t
 </table>
 
 24 frames:
+
 ```bash
 python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A truck is running past the Arc de Triomphe." --checkpoint_folder ./outputs/train/car_24/ --checkpoint_index 150 --noise_prior 0.5 --width 576 --height 320 --num-frames 24 --seed 34543
 ```
+
 <table class="center">
 <tr>
   <td style="text-align:center;"><b>Reference Video</b></td>
@@ -319,10 +339,13 @@ More sports, to be continued ...
 ## MotionDirector for Cinematic Shots <a name="MotionDirector_for_Cinematic_Shots"></a>
 
 ### 1. Zoom
+
 #### 1.1 Dolly Zoom (Hitchcockian Zoom)
+
 ```bash
 python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A firefighter standing in front of a burning forest captured with a dolly zoom." --checkpoint_folder ./outputs/train/dolly_zoom/ --checkpoint_index 150 --noise_prior 0.5 --seed 9365597
 ```
+
 <table class="center">
 <tr>
   <td style="text-align:center;"><b>Reference Video</b></td>
@@ -355,11 +378,13 @@ python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A f
 </table>
 
 #### 1.2 Zoom In
+
 The reference video is shot with my own water cup. You can also pick up your cup or any other object to practice camera movements and turn it into imaginative videos. Create your AI films with customized camera movements!
 
 ```bash
 python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A firefighter standing in front of a burning forest captured with a zoom in." --checkpoint_folder ./outputs/train/zoom_in/ --checkpoint_index 150 --noise_prior 0.3 --seed 1429227
 ```
+
 <table class="center">
 <tr>
   <td style="text-align:center;"><b>Reference Video</b></td>
@@ -380,9 +405,11 @@ python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A f
 </table>
 
 #### 1.3 Zoom Out
+
 ```bash
 python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A firefighter standing in front of a burning forest captured with a zoom out." --checkpoint_folder ./outputs/train/zoom_out/ --checkpoint_index 150 --noise_prior 0.3 --seed 4971910
 ```
+
 <table class="center">
 <tr>
   <td style="text-align:center;"><b>Reference Video</b></td>
@@ -455,34 +482,46 @@ python MotionDirector_inference.py --model /path/to/the/ZeroScope  --prompt "A f
 </tr>
 </table>
 
-
 More Cinematic Shots, to be continued ....
 
 ## MotionDirector for Image Animation <a name="MotionDirector_for_Image_Animation"></a>
+
 ### Train
+
 Train the spatial path with reference image.
+
 ```bash
 python MotionDirector_train.py --config ./configs/config_single_image.yaml
 ```
+
 Then train the temporal path to learn the motion in reference video.
+
 ```bash
 python MotionDirector_train.py --config ./configs/config_single_video.yaml
 ```
 
 ### Inference
+
 Inference with spatial path learned from reference image and temporal path learned form reference video.
+
 ```bash
 python MotionDirector_inference_multi.py --model /path/to/the/foundation/model  --prompt "Your prompt" --spatial_path_folder /path/to/the/trained/MotionDirector/spatial/lora/ --temporal_path_folder /path/to/the/trained/MotionDirector/temporal/lora/ --noise_prior 0.
 ```
+
 ### Example
+
 Download the pre-trained weights.
+
 ```bash
 git clone https://huggingface.co/ruizhaocv/MotionDirector ./outputs
 ```
+
 Run the following command.
+
 ```bash
 python MotionDirector_inference_multi.py --model /path/to/the/ZeroScope  --prompt "A car is running on the road." --spatial_path_folder ./outputs/train/image_animation/train_2023-12-26T14-37-16/checkpoint-300/spatial/lora/ --temporal_path_folder ./outputs/train/image_animation/train_2023-12-26T13-08-20/checkpoint-300/temporal/lora/ --noise_prior 0.5 --seed 5057764
 ```
+
 <table class="center">
 <tr>
   <td style="text-align:center;"><b>Reference Image</b></td>
@@ -503,32 +542,44 @@ python MotionDirector_inference_multi.py --model /path/to/the/ZeroScope  --promp
 </tr>
 </table>
 
-
 ## MotionDirector with Customized Appearance <a name="MotionDirector_with_Customized_Appearance"></a>
+
 ### Train
+
 Train the spatial path with reference images.
+
 ```bash
 python MotionDirector_train.py --config ./configs/config_multi_images.yaml
 ```
+
 Then train the temporal path to learn the motions in reference videos.
+
 ```bash
 python MotionDirector_train.py --config ./configs/config_multi_videos.yaml
 ```
 
 ### Inference
+
 Inference with spatial path learned from reference images and temporal path learned form reference videos.
+
 ```bash
 python MotionDirector_inference_multi.py --model /path/to/the/foundation/model  --prompt "Your prompt" --spatial_path_folder /path/to/the/trained/MotionDirector/spatial/lora/ --temporal_path_folder /path/to/the/trained/MotionDirector/temporal/lora/ --noise_prior 0.
 ```
+
 ### Example
+
 Download the pre-trained weights.
+
 ```bash
 git clone https://huggingface.co/ruizhaocv/MotionDirector ./outputs
 ```
+
 Run the following command.
+
 ```bash
 python MotionDirector_inference_multi.py --model /path/to/the/ZeroScope  --prompt "A Terracotta Warrior is riding a horse through an ancient battlefield." --spatial_path_folder ./outputs/train/customized_appearance/terracotta_warrior/checkpoint-default/spatial/lora --temporal_path_folder ./outputs/train/riding_horse/checkpoint-default/temporal/lora/ --noise_prior 0. --seed 1455028
 ```
+
 Results are shown in the [table](#customize-both-appearance-and-motion-).
 
 ## More results
@@ -539,6 +590,7 @@ Improvements to the code are also highly welcome.
 Please refer to [Project Page](https://showlab.github.io/MotionDirector) for more results.
 
 ### Astronaut's daily life on Mars:
+
 <table class="center">
 <tr>
   <td style="text-align:center;" colspan="4"><b>Astronaut's daily life on Mars (Motion concepts learned by MotionDirector)</b></td>
@@ -583,7 +635,6 @@ Please refer to [Project Page](https://showlab.github.io/MotionDirector) for mor
 
 ## Citation
 
-
 ```bibtex
 
 @article{zhao2023motiondirector,
@@ -600,6 +651,6 @@ Please refer to [Project Page](https://showlab.github.io/MotionDirector) for mor
 - This code builds on [diffusers](https://github.com/huggingface/diffusers), [Tune-a-video](https://github.com/showlab/Tune-A-Video) and [Text-To-Video-Finetuning](https://github.com/ExponentialML/Text-To-Video-Finetuning). Thanks for open-sourcing!
 - Thanks to [camenduru](https://twitter.com/camenduru) for the [colab demo](https://github.com/camenduru/MotionDirector-colab).
 - Thanks to [yhyu13](https://github.com/yhyu13) for the [Huggingface Repo](https://huggingface.co/Yhyu13/MotionDirector_LoRA).
-- We would like to thank [AK(@_akhaliq)](https://twitter.com/_akhaliq?lang=en) and huggingface team for the help of setting up oneline gradio demo.
+- We would like to thank [AK(@\_akhaliq)](https://twitter.com/_akhaliq?lang=en) and huggingface team for the help of setting up oneline gradio demo.
 - Thanks to [MagicAnimate](https://github.com/magic-research/magic-animate/) for the gradio demo template.
 - Thanks to [deepbeepmeep](https://github.com/deepbeepmeep), and [XiaominLi](https://github.com/XiaominLi1997) for improving the code.

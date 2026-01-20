@@ -469,7 +469,7 @@ def inject_trainable_lora_extended(
 
     if loras != None:
         loras = torch.load(loras)
-    if True:
+    if True: #Original code that ran through target modules
         for target_replace_module_i in target_replace_module:
             for _module, name, _child_module in _find_modules(
                 model, [target_replace_module_i], search_class=[nn.Linear, nn.Conv2d, nn.Conv3d]
