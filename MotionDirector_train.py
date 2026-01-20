@@ -764,14 +764,13 @@ def main(
     # )
 
     # Tanish: Added content and style optimizers and schedulers to accelerator.prepare
-    unet, optimizer_spatial_list, optimizer_temporal, optimizer_content, optimizer_style, \
+    optimizer_spatial_list, optimizer_temporal, optimizer_content, \
     train_dataloader, lr_scheduler_spatial_list, lr_scheduler_temporal, \
-    lr_scheduler_content, lr_scheduler_style, text_encoder = accelerator.prepare(
+    lr_scheduler_content, text_encoder = accelerator.prepare(
         unet,
-        optimizer_spatial_list, optimizer_temporal, optimizer_content, optimizer_style,
+        optimizer_spatial_list, optimizer_temporal, optimizer_content,
         train_dataloader,
-        lr_scheduler_spatial_list, lr_scheduler_temporal,
-        lr_scheduler_content, lr_scheduler_style,
+        lr_scheduler_spatial_list, lr_scheduler_temporal, lr_scheduler_content,
         text_encoder
     )
 
