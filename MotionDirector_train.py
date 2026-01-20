@@ -700,34 +700,35 @@ def main(
 
 
 #     # ------ Style Lora ------
-#     lora_manager_style = LoraHandler(
-#         use_unet_lora=use_unet_lora,
-#         unet_replace_modules=["Transformer2DModel"]
-#     )
-#     unet_lora_params_style, unet_negation_style = lora_manager_style.add_lora_to_model(
-#     use_unet_lora, unet, lora_manager_style.unet_replace_modules,
-#     lora_unet_dropout, lora_path + '/style/lora/', r=lora_rank
-# )
-#     optimizer_style = optimizer_cls(
-#         create_optimizer_params(
-#             [param_optim(unet_lora_params_style, use_unet_lora, is_lora=True,
-#                         extra_params={**{"lr": learning_rate}, **extra_unet_params})],
-#             learning_rate
-#         ),
-#         lr=learning_rate,
-#         betas=(adam_beta1, adam_beta2),
-#         weight_decay=adam_weight_decay,
-#         eps=adam_epsilon,
-#     )
-#     lr_scheduler_style = get_scheduler(
-#         lr_scheduler,
-#         optimizer=optimizer_style,
-#         num_warmup_steps=lr_warmup_steps * gradient_accumulation_steps,
-#         num_training_steps=max_train_steps * gradient_accumulation_steps,
-#     )
+    lora_manager_style = LoraHandler(
+        use_unet_lora=use_unet_lora,
+        unet_replace_modules=["Transformer2DModel"],  # later: style-only blocks
+    )
+    unet_lora_params_style, unet_negation_style = lora_manager_style.add_lora_to_model(
+        use_unet_lora, unet, lora_manager_style.unet_replace_modules,
+        lora_unet_dropout, lora_path + '/style/lora/', r=lora_rank
+    )
+
+    optimizer_style = optimizer_cls(
+        create_optimizer_params(
+            [param_optim(unet_lora_params_style, use_unet_lora, is_lora=True,
+                        extra_params={**{"lr": learning_rate}, **extra_unet_params})],
+            learning_rate
+        ),
+        lr=learning_rate,
+        betas=(adam_beta1, adam_beta2),
+        weight_decay=adam_weight_decay,
+        eps=adam_epsilon,
+    )
+    lr_scheduler_style = get_scheduler(
+        lr_scheduler,
+        optimizer=optimizer_style,
+        num_warmup_steps=lr_warmup_steps * gradient_accumulation_steps,
+        num_training_steps=max_train_steps * gradient_accumulation_steps,
+    )
     
     # Tanish: Update negation list
-    unet_negation_all = unet_negation_spatial + unet_negation_temporal + unet_negation_content
+    unet_negation_all = unet_negation_spatial + unet_negation_temporal + unet_negation_content + unet_negation_style
                                     
 
     # DataLoaders creation:
@@ -764,13 +765,14 @@ def main(
     # )
 
     # Tanish: Added content and style optimizers and schedulers to accelerator.prepare
-    unet, optimizer_spatial_list, optimizer_temporal, optimizer_content, \
+    unet, optimizer_spatial_list, optimizer_temporal, optimizer_content, optimizer_style, \
     train_dataloader, lr_scheduler_spatial_list, lr_scheduler_temporal, \
-    lr_scheduler_content, text_encoder = accelerator.prepare(
+    lr_scheduler_content, lr_scheduler_style, text_encoder = accelerator.prepare(
         unet,
-        optimizer_spatial_list, optimizer_temporal, optimizer_content,
+        optimizer_spatial_list, optimizer_temporal, optimizer_content, optimizer_style,
         train_dataloader,
-        lr_scheduler_spatial_list, lr_scheduler_temporal, lr_scheduler_content,
+        lr_scheduler_spatial_list, lr_scheduler_temporal,
+        lr_scheduler_content, lr_scheduler_style,
         text_encoder
     )
 
@@ -941,9 +943,32 @@ def main(
                     reduction="mean",
                 )
 
-            # ---------- STYLE LOSS: Phase 2, reuse same frame (stub) ----------
-            # Later will change this to a separate style image.
-            loss_style = loss_content.clone()
+          
+            # ---------- STYLE LOSS: Phase 3, use real style image ----------
+            style_pixels = batch["style_pixel_values"]  # [B,C,H,W] from ImageDataset
+
+            if style_pixels.ndim == 3:  # single image case
+                style_pixels = style_pixels.unsqueeze(0)  # [1,C,H,W]
+
+            # add frame dim -> [B,1,C,H,W]
+            style_pixels = style_pixels.unsqueeze(1)
+
+            latents_style = tensor_to_vae_latent(style_pixels, vae)  # [B,C,1,H,W]
+            noise_style = sample_noise(latents_style, offset_noise_strength, use_offset_noise)
+            noisy_latents_style = noise_scheduler.add_noise(latents_style, noise_style, timesteps)
+            target_style = noise_style
+
+            model_pred_style = unet(
+                noisy_latents_style, timesteps,
+                encoder_hidden_states=encoder_hidden_states
+            ).sample
+
+            loss_style = F.mse_loss(
+                model_pred_style[:, :, 0, :, :].float(),
+                target_style[:, :, 0, :, :].float(),
+                reduction="mean",
+            )
+
 
             # total spatial loss
             loss_spatial = loss_content + loss_style
@@ -1017,9 +1042,12 @@ def main(
                     else:
                         optimizer_spatial_list[step].step()
 
-                    # Tanish: Content Lora optimization step 
+                    # Tanish: Content and Style Lora optimization step 
                     optimizer_content.step()
                     lr_scheduler_content.step()
+
+                    optimizer_style.step()
+                    lr_scheduler_style.step()
 
                 if not mask_temporal_lora and train_temporal_lora:
                     accelerator.backward(loss_temporal)

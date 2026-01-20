@@ -234,6 +234,11 @@ if __name__ == "__main__":
     parser.add_argument("-rn", "--repeat_num", type=int, default=1,
                         help="How many results to generate with the same prompt.")
 
+    parser.add_argument("--content-lora", type=str, default="", 
+                    help="Path to content LoRA folder (e.g. checkpoints/300/content/lora)")
+    parser.add_argument("--style-lora", type=str, default="", 
+                        help="Path to style LoRA folder (e.g. checkpoints/300/style/lora)")
+
     args = parser.parse_args()
     # fmt: on
 

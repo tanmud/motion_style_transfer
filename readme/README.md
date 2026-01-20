@@ -219,7 +219,7 @@ Results:
 16 frames:
 
 ```bash
-python MotionDirector_inference.py --model ./models/zeroscope_v2_576w/  --prompt "A tank is running on the moon." --checkpoint_folder ./outputs/train/train_2026-01-19T14-29-26 --checkpoint_index 150 --noise_prior 0.5 --seed 8551187
+python MotionDirector_inference.py --model /work/10572/tmudali/vista/MotionDirector/models/zeroscope_v2_576w/  --prompt "A tank is running on the moon." --checkpoint_folder ./outputs/train/train_2026-01-20T12-36-47 --checkpoint_index 150 --noise_prior 0.5 --seed 8551187
 ```
 
 <table class="center">
