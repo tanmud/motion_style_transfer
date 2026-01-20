@@ -764,7 +764,7 @@ def main(
     # )
 
     # Tanish: Added content and style optimizers and schedulers to accelerator.prepare
-    optimizer_spatial_list, optimizer_temporal, optimizer_content, \
+    unet, optimizer_spatial_list, optimizer_temporal, optimizer_content, \
     train_dataloader, lr_scheduler_spatial_list, lr_scheduler_temporal, \
     lr_scheduler_content, text_encoder = accelerator.prepare(
         unet,
