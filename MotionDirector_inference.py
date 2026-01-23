@@ -311,8 +311,8 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("Loading LoRAs:")
     print(f"  Temporal (motion):    {lora_path}")
-    print(f"  Content (structure):  {content_lora_path if os.path.exists(content_lora_path) else 'NOT FOUND'}")
-    print(f"  Style (appearance):   {style_lora_path if os.path.exists(style_lora_path) else 'NOT FOUND'}")
+    print(f"  Content (structure):  {content_lora_path if os.path.exists(content_lora_path) else f'NOT FOUND -> Failed path{content_lora_path}'}")
+    print(f"  Style (appearance):   {style_lora_path if os.path.exists(style_lora_path) else f'NOT FOUND -> Failed path{style_lora_path}'}")
     print("="*60 + "\n")
 
     video_frames = inference(
