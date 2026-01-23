@@ -24,10 +24,9 @@ def initialize_pipeline(
     device: str = "cuda",
     xformers: bool = False,
     sdp: bool = False,
-    temporal_lora_path: str = "",
     content_lora_path: str = "",
     style_lora_path: str = "",
-    lora_path: str = "",
+    lora_path: str = "", # Temporal LoRA path
     lora_rank: int = 64,
     lora_scale: float = 1.0,
 ):
@@ -41,6 +40,41 @@ def initialize_pipeline(
 
     # Enable xformers if available
     handle_memory_attention(xformers, sdp, unet)
+
+    if content_lora_path and os.path.exists(content_lora_path):
+        print(f"Loading content LoRA from {content_lora_path}")
+        lora_manager_content = LoraHandler(
+            version="cloneofsimo",
+            use_unet_lora=True,
+            use_text_lora=False,
+            save_for_webui=False,
+            only_for_webui=False,
+            unet_replace_modules=["Transformer2DModel"],
+            text_encoder_replace_modules=None,
+            lora_bias=None
+        )
+        lora_manager_content.add_lora_to_model(
+            True, unet, lora_manager_content.unet_replace_modules,
+            0, content_lora_path, r=lora_rank, scale=lora_scale
+        )
+    
+    # 2. Load STYLE LoRA (appearance) - Transformer2D
+    if style_lora_path and os.path.exists(style_lora_path):
+        print(f"Loading style LoRA from {style_lora_path}")
+        lora_manager_style = LoraHandler(
+            version="cloneofsimo",
+            use_unet_lora=True,
+            use_text_lora=False,
+            save_for_webui=False,
+            only_for_webui=False,
+            unet_replace_modules=["Transformer2DModel"],
+            text_encoder_replace_modules=None,
+            lora_bias=None
+        )
+        lora_manager_style.add_lora_to_model(
+            True, unet, lora_manager_style.unet_replace_modules,
+            0, style_lora_path, r=lora_rank, scale=lora_scale
+        )
 
     lora_manager_temporal = LoraHandler(
         version="cloneofsimo",
@@ -146,7 +180,9 @@ def inference(
     device: str = "cuda",
     xformers: bool = False,
     sdp: bool = False,
-    lora_path: str = "",
+    lora_path: str = "", # Temporal LoRA path
+    content_lora_path: str = "",
+    style_lora_path: str = "",
     lora_rank: int = 64,
     lora_scale: float = 1.0,
     seed: Optional[int] = None,
@@ -160,7 +196,7 @@ def inference(
 
     with torch.autocast(device, dtype=torch.half):
         # prepare models
-        pipe = initialize_pipeline(model, device, xformers, sdp, lora_path, lora_rank, lora_scale)
+        pipe = initialize_pipeline(model, device, xformers, sdp, lora_path, content_lora_path, style_lora_path, lora_rank, lora_scale)
 
         for i in range(repeat_num):
             if seed is None:
@@ -262,9 +298,23 @@ if __name__ == "__main__":
     # =========================================
 
     lora_path = f"{args.checkpoint_folder}/checkpoint-{args.checkpoint_index}/temporal/lora"
+
+    content_lora_path = args.content_lora if args.content_lora else \
+    f"{args.checkpoint_folder}/checkpoint-{args.checkpoint_index}/content/lora"
+    style_lora_path = args.style_lora if args.style_lora else \
+    f"{args.checkpoint_folder}/checkpoint-{args.checkpoint_index}/style/lora"
+
     latents_folder = f"{args.checkpoint_folder}/cached_latents"
     latents_path = f"{latents_folder}/{random.choice(os.listdir(latents_folder))}"
     assert os.path.exists(lora_path)
+
+    print("\n" + "="*60)
+    print("Loading LoRAs:")
+    print(f"  Temporal (motion):    {lora_path}")
+    print(f"  Content (structure):  {content_lora_path if os.path.exists(content_lora_path) else 'NOT FOUND'}")
+    print(f"  Style (appearance):   {style_lora_path if os.path.exists(style_lora_path) else 'NOT FOUND'}")
+    print("="*60 + "\n")
+
     video_frames = inference(
         model=args.model,
         prompt=args.prompt,
@@ -278,6 +328,8 @@ if __name__ == "__main__":
         xformers=args.xformers,
         sdp=args.sdp,
         lora_path=lora_path,
+        content_lora_path=content_lora_path,
+        style_lora_path=style_lora_path,
         lora_rank=args.lora_rank,
         lora_scale = args.lora_scale,
         seed=args.seed,
