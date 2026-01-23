@@ -35,7 +35,7 @@ from diffusers.models.attention import BasicTransformerBlock
 from transformers import CLIPTextModel, CLIPTokenizer
 from transformers.models.clip.modeling_clip import CLIPEncoder
 from utils.dataset import VideoJsonDataset, SingleVideoDataset, \
-    ImageDataset, VideoFolderDataset, CachedDataset
+    ImageDataset, VideoFolderDataset, CachedDataset, PairedStyleDataset
 from einops import rearrange, repeat
 from utils.lora_handler import LoraHandler
 from utils.lora import extract_lora_child_module
@@ -570,7 +570,19 @@ def main(
     optimizer_cls = get_optimizer(use_8bit_adam)
 
     # Get the training dataset based on types (json, single_video, image)
-    train_datasets = get_train_dataset(dataset_types, train_data, tokenizer)
+    content_datasets = get_train_dataset(dataset_types, train_data, tokenizer)
+    assert len(content_datasets) == 1, "Only one content dataset is supported."
+    content_dataset = content_datasets[0]
+
+    assert extra_train_data is not None and len(extra_train_data) > 0, "Style train data must be provided."
+    style_cfg = extra_train_data[0]
+
+    style_datasets = get_train_dataset(style_cfg['dataset_types'], style_cfg['train_data'], tokenizer)
+
+    assert len(style_datasets) == 1, "Only one style dataset is supported."
+    style_dataset = style_datasets[0]
+
+    train_datasets = PairedStyleDataset(content_dataset, style_dataset)
 
     # If you have extra train data, you can add a list of however many you would like.
     # Eg: extra_train_data: [{: {dataset_types, train_data: {etc...}}}]
@@ -945,13 +957,19 @@ def main(
 
           
             # ---------- STYLE LOSS: Phase 3, use real style image ----------
-            style_pixels = batch["style_pixel_values"]  # [B,C,H,W] from ImageDataset
+            style_pixels = batch["style_pixel_values"]  # [F,C,H,W] or [B,F,C,H,W]
 
-            if style_pixels.ndim == 3:  # single image case
-                style_pixels = style_pixels.unsqueeze(0)  # [1,C,H,W]
+            if style_pixels.ndim == 4:  # [F,C,H,W] - not batched yet
+                style_pixels = style_pixels.unsqueeze(0)  # [1,F,C,H,W]
+            elif style_pixels.ndim != 5:
+                raise ValueError(f"Unexpected style_pixels shape: {style_pixels.shape}")
 
+            # Take one frame (0th)
+            style_frame = style_pixels[:, 0] # [B,C,H,W]
+
+            # Add time dimension for the VAE encoder helper
             # add frame dim -> [B,1,C,H,W]
-            style_pixels = style_pixels.unsqueeze(1)
+            style_pixels = style_frame.unsqueeze(1)
 
             latents_style = tensor_to_vae_latent(style_pixels, vae)  # [B,C,1,H,W]
             noise_style = sample_noise(latents_style, offset_noise_strength, use_offset_noise)

@@ -6,6 +6,7 @@ import json
 import torchvision
 import torchvision.transforms as T
 import torch
+import torch.nn.functional as F
 
 from glob import glob
 from PIL import Image
@@ -467,6 +468,56 @@ class ImageDataset(Dataset):
         }
 
         return example
+
+class PairedStyleDataset(Dataset):
+    """
+    Returns one content example + one style example per __getitem__.
+    Content example comes from a video/image dataset (must have 'pixel_values').
+    Style example comes from ImageDataset (also has 'pixel_values').
+
+    Output dict includes:
+      - pixel_values: content video/image tensor
+      - style_pixel_values: style image tensor (single frame, CxHxW or FxCxHxW depending on your ImageDataset)
+      - prompt_ids/text_prompt: use content prompt (or optionally style prompt)
+    """
+    def __init__(self, content_dataset, style_dataset):
+        self.content_dataset = content_dataset
+        self.style_dataset = style_dataset
+
+    def __len__(self):
+        return len(self.content_dataset)
+
+    def __getitem__(self, idx):
+        content_ex = self.content_dataset[idx]
+        style_ex = self.style_dataset[idx % len(self.style_dataset)]
+
+        # content_ex["pixel_values"] is typically [F,C,H,W]
+        # style_ex["pixel_values"] is also [F,C,H,W] (ImageDataset repeats to F=16)
+        content_shape = content_ex["pixel_values"].shape
+        style_shape = style_ex["pixel_values"].shape
+
+        # Get content shape (pixel_values is [F,C,H,W])
+        content_h, content_w = content_shape[-2:]
+        style_h, style_w = style_shape[-2:]
+
+        # If spatial dims don't match, resize style to match content
+        if (content_h != style_h) or (content_w != style_w):
+            # Resize style to match content spatial size
+            # style_ex["pixel_values"] is [F,C,H,W]
+            style_resized = F.interpolate(
+                style_ex["pixel_values"], 
+                size=(content_h, content_w),
+                mode='bilinear',
+                align_corners=False
+            )
+            style_ex["pixel_values"] = style_resized
+
+        # style_ex["pixel_values"] in your ImageDataset is shape [F,C,H,W] with F=16 repeated 
+        # We'll pass it through and handle the frame extraction in finetune_unet.
+        content_ex["style_pixel_values"] = style_ex["pixel_values"]
+        content_ex["style_text_prompt"] = style_ex.get("text_prompt", "")
+
+        return content_ex
 
 
 class VideoFolderDataset(Dataset):

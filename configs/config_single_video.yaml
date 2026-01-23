@@ -121,8 +121,8 @@ enable_xformers_memory_efficient_attention: True
 enable_torch_2_attn: True
 
 extra_train_data:
-  - dataset_types: ["ImageDataset"]
+  - dataset_types: ["image"]
     train_data:
-      image_dir: "/work/10572/tmudali/vista/motion_style_transfer/test_data/STYLE_IMAGES/monadikos_dog_standing.jpg" # folder of style images
-      prompts:
-        - "a monadikos dog standing on a table in flat cartoon illustration style"
+      image_dir: "/work/10572/tmudali/vista/motion_style_transfer/test_data/STYLE_IMAGES/" # folder of style images
+      single_img_prompt: "a monadikos dog standing on a table in flat cartoon illustration style"
+      use_bucketing: True
