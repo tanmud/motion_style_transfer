@@ -71,10 +71,10 @@ def initialize_pipeline(
             text_encoder_replace_modules=None,
             lora_bias=None
         )
-        lora_manager_style.add_lora_to_model(
-            True, unet, lora_manager_style.unet_replace_modules,
-            0, style_lora_path, r=lora_rank, scale=lora_scale
-        )
+        # lora_manager_style.add_lora_to_model(
+        #     True, unet, lora_manager_style.unet_replace_modules,
+        #     0, style_lora_path, r=lora_rank, scale=lora_scale
+        # )
 
     lora_manager_temporal = LoraHandler(
         version="cloneofsimo",
