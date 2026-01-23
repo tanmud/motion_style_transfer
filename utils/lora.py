@@ -533,8 +533,6 @@ def inject_trainable_lora_extended(
                     if bias is not None:
                         _tmp.conv.bias = bias
                     third = True
-                print("LoRA Injection : injecting lora into ", name)
-                print(first, second, third, _child_module.__class__)
                 # switch the module
                 _tmp.to(_child_module.weight.device).to(_child_module.weight.dtype)
                 if bias is not None:
