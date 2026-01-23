@@ -574,27 +574,28 @@ def main(
     assert len(content_datasets) == 1, "Only one content dataset is supported."
     content_dataset = content_datasets[0]
 
-    assert extra_train_data is not None and len(extra_train_data) > 0, "Style train data must be provided."
-    style_cfg = extra_train_data[0]
-
-    style_datasets = get_train_dataset(style_cfg['dataset_types'], style_cfg['train_data'], tokenizer)
-
-    assert len(style_datasets) == 1, "Only one style dataset is supported."
-    style_dataset = style_datasets[0]
-
-    train_datasets = PairedStyleDataset(content_dataset, style_dataset)
-
-    # If you have extra train data, you can add a list of however many you would like.
-    # Eg: extra_train_data: [{: {dataset_types, train_data: {etc...}}}]
-    try:
-        if extra_train_data is not None and len(extra_train_data) > 0:
-            for dataset in extra_train_data:
-                d_t, t_d = dataset['dataset_types'], dataset['train_data']
-                train_datasets += get_train_dataset(d_t, t_d, tokenizer)
-
-    except Exception as e:
-        print(f"Could not process extra train datasets due to an error : {e}")
-
+    if extra_train_data is not None and len(extra_train_data) > 0:
+        style_cfg = extra_train_data[0]
+        style_datasets = get_train_dataset(style_cfg['dataset_types'], style_cfg['train_data'], tokenizer)
+        assert len(style_datasets) == 1, "Only one style dataset is supported."
+        style_dataset = style_datasets[0]
+        
+        # Create paired dataset and put it in a list
+        train_datasets = [PairedStyleDataset(content_dataset, style_dataset)]
+        
+        # Process any ADDITIONAL extra datasets (if you have more than one)
+        # This allows extra_train_data[1], extra_train_data[2], etc. to be added
+        if len(extra_train_data) > 1:
+            try:
+                for dataset in extra_train_data[1:]:  # Skip the first one (already used for pairing)
+                    d_t, t_d = dataset['dataset_types'], dataset['train_data']
+                    train_datasets += get_train_dataset(d_t, t_d, tokenizer)
+            except Exception as e:
+                print(f"Could not process additional train datasets due to an error : {e}")
+    else:
+        # No style data - use content only (original MotionDirector behavior)
+        train_datasets = [content_dataset]
+        
     # Extend datasets that are less than the greatest one. This allows for more balanced training.
     attrs = ['train_data', 'frames', 'image_dir', 'video_files']
     extend_datasets(train_datasets, attrs, extend=extend_dataset)
