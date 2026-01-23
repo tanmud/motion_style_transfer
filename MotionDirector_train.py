@@ -443,6 +443,8 @@ def save_pipe(
         output_dir,
         lora_manager_spatial: LoraHandler,
         lora_manager_temporal: LoraHandler,
+        lora_manager_content: LoraHandler,
+        lora_manager_style: LoraHandler,
         unet_target_replace_module=None,
         text_target_replace_module=None,
         is_checkpoint=False,
@@ -471,6 +473,20 @@ def save_pipe(
     lora_manager_spatial.save_lora_weights(model=copy.deepcopy(pipeline), save_path=save_path+'/spatial', step=global_step)
     if lora_manager_temporal is not None:
         lora_manager_temporal.save_lora_weights(model=copy.deepcopy(pipeline), save_path=save_path+'/temporal', step=global_step)
+
+    if lora_manager_content is not None:
+        lora_manager_content.save_lora_weights(
+            model=copy.deepcopy(pipeline), 
+            save_path=save_path+'/content', 
+            step=global_step
+        )
+    
+    if lora_manager_style is not None:
+        lora_manager_style.save_lora_weights(
+            model=copy.deepcopy(pipeline), 
+            save_path=save_path+'/style', 
+            step=global_step
+        )
 
     if save_pretrained_model:
         pipeline.save_pretrained(save_path)
@@ -595,7 +611,7 @@ def main(
     else:
         # No style data - use content only (original MotionDirector behavior)
         train_datasets = [content_dataset]
-        
+
     # Extend datasets that are less than the greatest one. This allows for more balanced training.
     attrs = ['train_data', 'frames', 'image_dir', 'video_files']
     extend_datasets(train_datasets, attrs, extend=extend_dataset)
@@ -1094,8 +1110,10 @@ def main(
                         text_encoder,
                         vae,
                         output_dir,
-                        lora_manager_spatial,
+                        lora_manager_spatial[0] if single_spatial_lora else lora_managers_spatial,
                         lora_manager_temporal,
+                        lora_manager_content,
+                        lora_manager_style,
                         unet_lora_modules,
                         text_encoder_lora_modules,
                         is_checkpoint=True,
@@ -1173,8 +1191,10 @@ def main(
             text_encoder,
             vae,
             output_dir,
-            lora_manager_spatial,
+            lora_manager_spatial[0] if single_spatial_lora else lora_managers_spatial,
             lora_manager_temporal,
+            lora_manager_content,
+            lora_manager_style,
             unet_lora_modules,
             text_encoder_lora_modules,
             is_checkpoint=False,
