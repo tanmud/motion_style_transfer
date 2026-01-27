@@ -972,7 +972,7 @@ def main(
                     reduction="mean",
                 )
 
-          
+
             # ---------- STYLE LOSS: Phase 3, use real style image ----------
             style_pixels = batch["style_pixel_values"]  # [F,C,H,W] or [B,F,C,H,W]
 
