@@ -67,7 +67,7 @@ def initialize_pipeline(
             use_text_lora=False,
             save_for_webui=False,
             only_for_webui=False,
-            unet_replace_modules=["Transformer2DModel"],
+            unet_replace_modules=["TransformerTemporalModel"],
             text_encoder_replace_modules=None,
             lora_bias=None
         )
