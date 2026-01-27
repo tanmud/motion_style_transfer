@@ -75,6 +75,7 @@ def initialize_pipeline(
             True, unet, lora_manager_style.unet_replace_modules,
             0, style_lora_path, r=lora_rank, scale=lora_scale
         )
+        print("Style LoRA loaded.")
 
     # lora_manager_temporal = LoraHandler(
     #     version="cloneofsimo",
@@ -196,7 +197,17 @@ def inference(
 
     with torch.autocast(device, dtype=torch.half):
         # prepare models
-        pipe = initialize_pipeline(model, device, xformers, sdp, lora_path, content_lora_path, style_lora_path, lora_rank, lora_scale)
+        pipe = initialize_pipeline(
+            model=model,
+            device=device,
+            xformers=xformers,
+            sdp=sdp,
+            content_lora_path=content_lora_path,
+            style_lora_path=style_lora_path,
+            lora_path=lora_path,
+            lora_rank=lora_rank,
+            lora_scale=lora_scale
+        )
 
         for i in range(repeat_num):
             if seed is None:
