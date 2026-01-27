@@ -353,8 +353,10 @@ def _find_modules_v2(
         for fullname, module in ancestor.named_modules():
             if any([isinstance(module, _class) for _class in search_class]):
                 continue_flag = True
-                if 'Transformer2DModel' in ancestor_class and ('attn1' in fullname or 'ff' in fullname):
+                if 'Transformer2DModel' in ancestor_class and ('attn1' in fullname):
                     continue_flag = False
+                if 'Transformer2DModel' in ancestor_class and ('attn1' in fullname or 'ff' in fullname):
+                    print("yeah that might be the issue... hopefully")
                 if 'TransformerTemporalModel' in ancestor_class and ('attn1' in fullname or 'attn2' in fullname or 'ff' in fullname):
                     continue_flag = False
                 if continue_flag:
