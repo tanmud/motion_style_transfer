@@ -41,22 +41,22 @@ def initialize_pipeline(
     # Enable xformers if available
     handle_memory_attention(xformers, sdp, unet)
 
-    if content_lora_path and os.path.exists(content_lora_path):
-        print(f"Loading content LoRA from {content_lora_path}")
-        lora_manager_content = LoraHandler(
-            version="cloneofsimo",
-            use_unet_lora=True,
-            use_text_lora=False,
-            save_for_webui=False,
-            only_for_webui=False,
-            unet_replace_modules=["Transformer2DModel"],
-            text_encoder_replace_modules=None,
-            lora_bias=None
-        )
-        lora_manager_content.add_lora_to_model(
-            True, unet, lora_manager_content.unet_replace_modules,
-            0, content_lora_path, r=lora_rank, scale=lora_scale
-        )
+    # if content_lora_path and os.path.exists(content_lora_path):
+    #     print(f"Loading content LoRA from {content_lora_path}")
+    #     lora_manager_content = LoraHandler(
+    #         version="cloneofsimo",
+    #         use_unet_lora=True,
+    #         use_text_lora=False,
+    #         save_for_webui=False,
+    #         only_for_webui=False,
+    #         unet_replace_modules=["Transformer2DModel"],
+    #         text_encoder_replace_modules=None,
+    #         lora_bias=None
+    #     )
+    #     lora_manager_content.add_lora_to_model(
+    #         True, unet, lora_manager_content.unet_replace_modules,
+    #         0, content_lora_path, r=lora_rank, scale=lora_scale
+    #     )
     
     # 2. Load STYLE LoRA (appearance) - Transformer2D
     if style_lora_path and os.path.exists(style_lora_path):
@@ -71,24 +71,24 @@ def initialize_pipeline(
             text_encoder_replace_modules=None,
             lora_bias=None
         )
-        # lora_manager_style.add_lora_to_model(
-        #     True, unet, lora_manager_style.unet_replace_modules,
-        #     0, style_lora_path, r=lora_rank, scale=lora_scale
-        # )
+        lora_manager_style.add_lora_to_model(
+            True, unet, lora_manager_style.unet_replace_modules,
+            0, style_lora_path, r=lora_rank, scale=lora_scale
+        )
 
-    lora_manager_temporal = LoraHandler(
-        version="cloneofsimo",
-        use_unet_lora=True,
-        use_text_lora=False,
-        save_for_webui=False,
-        only_for_webui=False,
-        unet_replace_modules=["TransformerTemporalModel"],
-        text_encoder_replace_modules=None,
-        lora_bias=None
-    )
+    # lora_manager_temporal = LoraHandler(
+    #     version="cloneofsimo",
+    #     use_unet_lora=True,
+    #     use_text_lora=False,
+    #     save_for_webui=False,
+    #     only_for_webui=False,
+    #     unet_replace_modules=["TransformerTemporalModel"],
+    #     text_encoder_replace_modules=None,
+    #     lora_bias=None
+    # )
 
-    unet_lora_params, unet_negation = lora_manager_temporal.add_lora_to_model(
-        True, unet, lora_manager_temporal.unet_replace_modules, 0, lora_path, r=lora_rank, scale=lora_scale)
+    # unet_lora_params, unet_negation = lora_manager_temporal.add_lora_to_model(
+    #     True, unet, lora_manager_temporal.unet_replace_modules, 0, lora_path, r=lora_rank, scale=lora_scale)
 
     unet.eval()
     text_encoder.eval()
