@@ -59,23 +59,23 @@ def initialize_pipeline(
     #     )
     
     # 2. Load STYLE LoRA (appearance) - Transformer2D
-    if style_lora_path and os.path.exists(style_lora_path):
-        print(f"Loading style LoRA from {style_lora_path}")
-        lora_manager_style = LoraHandler(
-            version="cloneofsimo",
-            use_unet_lora=True,
-            use_text_lora=False,
-            save_for_webui=False,
-            only_for_webui=False,
-            unet_replace_modules=["TransformerTemporalModel"],
-            text_encoder_replace_modules=None,
-            lora_bias=None
-        )
-        lora_manager_style.add_lora_to_model(
-            True, unet, lora_manager_style.unet_replace_modules,
-            0, style_lora_path, r=lora_rank, scale=lora_scale
-        )
-        print("Style LoRA loaded.")
+    # if style_lora_path and os.path.exists(style_lora_path):
+    #     print(f"Loading style LoRA from {style_lora_path}")
+    #     lora_manager_style = LoraHandler(
+    #         version="cloneofsimo",
+    #         use_unet_lora=True,
+    #         use_text_lora=False,
+    #         save_for_webui=False,
+    #         only_for_webui=False,
+    #         unet_replace_modules=["TransformerTemporalModel"],
+    #         text_encoder_replace_modules=None,
+    #         lora_bias=None
+    #     )
+    #     lora_manager_style.add_lora_to_model(
+    #         True, unet, lora_manager_style.unet_replace_modules,
+    #         0, style_lora_path, r=lora_rank, scale=lora_scale
+    #     )
+    #     print("Style LoRA loaded.")
 
     # lora_manager_temporal = LoraHandler(
     #     version="cloneofsimo",
